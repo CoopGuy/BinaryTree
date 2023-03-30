@@ -7,10 +7,7 @@ class BinaryTree
 private:
 	class Node
 	{
-	public:
-		T *value;
-		Node *left, *right;
-		int lHeight, rHeight;
+	private:
 		void setLHeight()
 		{
 			if ( !left )lHeight = 0;
@@ -21,6 +18,11 @@ private:
 			if ( !right )rHeight = 0;
 			else rHeight = 1 + std::max( right->lHeight, right->rHeight );
 		}
+	
+	public:
+		T *value;
+		Node *left, *right;
+		int lHeight, rHeight;
 	public:
 		Node( T *val ) : value( val ), left( nullptr ), right( nullptr ), lHeight(0), rHeight(0) {};
 		~Node() { delete value; };
@@ -36,6 +38,7 @@ private:
 				setRHeight();
 			}
 		}
+		bool isLeaf() { return !left && !right; };
 	};
 
 private:
@@ -45,9 +48,9 @@ private:
 	void AddDescending( BinaryTree<T>::Node **arr, BinaryTree<T>::Node *top, int &ind );
 	
 	void InsertH( T *ValueToInsert, Node *tRoot );
-	
-	Node **addrFind( T* ValueToFind );
-	Node *FindNextLower();
+
+	Node *RemoveH( T *ValueToRemove, Node *&root );
+	Node *RemoveNextHighest( Node *&root );
 
 	void EmptyTreeH( Node *&ptr )
 	{
@@ -65,17 +68,17 @@ private:
 	
 	void Balance( Node *&parent );
 
-	void RotateLeftLeft( Node *&parentsptr );
+	void RotateLeftLeft  ( Node *&parentsptr );
 	void RotateRightRight( Node *&parentsptr );
-	void RotateLeftRight( Node *&parent );
-	void RotateRightLeft( Node *&parent );
+	void RotateLeftRight ( Node *&parentsptr );
+	void RotateRightLeft ( Node *&parentsptr );
 
 public:
 	BinaryTree() : head( nullptr ) {};
 	~BinaryTree() { EmptyTree(); };
 	void EmptyTree() { EmptyTreeH( head ); };
 
-	int Size() { SizeH( head ); };
+	int Size() { return SizeH( head ); };
 
 	void Insert( T *ValueToInsert );
 	Node *Remove( T *ValueToRemove );

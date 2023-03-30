@@ -60,7 +60,7 @@ void BinaryTree<T>::Insert( T *ValueToInsert )
 }
 
 template <typename T>
-typename BinaryTree<T>::Node *BinaryTree<T>::Remove( T *ValueToRemove )
+typename BinaryTree<T>::Node *BinaryTree<T>::RemoveH( T *ValueToRemove, Node *&root )
 {
     /*
     Cases reference:
@@ -68,43 +68,77 @@ typename BinaryTree<T>::Node *BinaryTree<T>::Remove( T *ValueToRemove )
     Node has one child
     Node has two children
     */
+
     Node *res;
-    Node **ptrToNodeWithVal = addrFind( ValueToRemove );
-    if ( !(*ptrToNodeWithVal)->left && !(*ptrToNodeWithVal)->right )
+
+    if ( root->value == *ValueToRemove ) // then remove the value
     {
-        res = *ptrToNodeWithVal;
-        *ptrToNodeWithVal = nullptr;
-        
+        if ( root->left && root->right ) // node has two children
+        {
+            // find next highest val in right subtree of children and have it assume the place of the node being removed
+            res = root;
+            Node **replacement = RemoveNextHighest( root->right );
+            ( *replacement )->left = root->left;
+            ( *replacement )->right = root->right;
+            root = replacement;
+            root->left = nullptr;
+            root->right = nullptr;
+        }
+        else if ( !root->left && !root->right ) // node has no children
+        {
+            res = root;
+            root = nullptr;
+        }
+        else // Node has only one child
+        {
+            res = root;
+            root = root->left != nullptr ? root->left : root->right;
+        }
+        return res;
     }
-    else if ( ( *ptrToNodeWithVal )->left && ( *ptrToNodeWithVal )->right )
+    else if ( root->value > *ValueToRemove )
     {
-        // find next highest val in subtree of children and have it assume the place of the node being removed
+        res = RemoveH( ValueToRemove, root->left );
+        root->setHeight( Node::direction::dleft );
     }
-    else // Node has only one child
+    else // root->value < *ValueToRemove
     {
-        res = *ptrToNodeWithVal;
-        *ptrToNodeWithVal = ( *ptrToNodeWithVal )->left == nullptr ? ( *ptrToNodeWithVal )->right : ( *ptrToNodeWithVal )->left;
+        res = RemoveH( ValueToRemove, root->right );
+        root->setHeight( Node::direction::dright );
     }
+
+    if ( res == nullptr ) return res; // dont balance, nothing removed
+    
+    if ( std::abs( root->lHeight - root->rHeight ) > 1 )Balance( root );
+    
     return res;
 }
 
 template <typename T>
-typename BinaryTree<T>::Node **BinaryTree<T>::addrFind( T* ValueToFind )
+typename BinaryTree<T>::Node *BinaryTree<T>::RemoveNextHighest( Node *&root )
 {
-    Node **temp = &head;
+    Node *res;
 
-    while ( !( *temp == nullptr || *(*temp)->value == *ValueToFind ) )
+    if ( !root->left && !root->right ) // then remove the value
     {
-             if ( *( *temp )->value < *ValueToFind )temp = &( ( *temp )->right );
-        else if ( *( *temp )->value > *ValueToFind )temp = &( ( *temp )->left  );
+        res = root;
+        root = nullptr;
+        return res;
     }
-    return temp;
+    else
+    {
+        res = RemoveNextHighest( root->left );
+        root->setHeight( Node::direction::dleft );
+    }
+
+    if ( std::abs( root->lHeight - root->rHeight ) > 1 )Balance( root );
+    return res;
 }
 
 template <typename T>
-typename BinaryTree<T>::Node *BinaryTree<T>::FindNextLower()
+typename BinaryTree<T>::Node *BinaryTree<T>::Remove( T *ValueToRemove )
 {
-
+    return RemoveH( ValueToRemove, head );
 }
 
 template <typename T>
