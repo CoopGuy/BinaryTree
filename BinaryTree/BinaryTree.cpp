@@ -4,65 +4,206 @@
 
 // Following functions deal with I/O of the tree
 template <typename T>
-void BinaryTree<T>::Insert( T* ValueToInsert )
+void BinaryTree<T>::InsertH( T *ValueToInsert, Node *tRoot )
 {
-    /* 
-    
-    For Reference:
-      treeLocationTracker : pointer to place we want to insert a pointer to a node of our value
-     *treeLocationTracker : variable that we want to set to point to a node object of our value
-    **treeLocationTracker : variable pointing to a node that is already in place where we want to insert our value
-    
-    */
-
-    // start by wanting to insert at head
-    Node **treeLocationTracker = &head;
-    Node *NodeToBeInserted = new Node( ValueToInsert );
-
-    do
+    if ( *tRoot->value > *ValueToInsert )
     {
-        // check if the place we want to insert is null 
-        // (this starts at head (if the first deref causes a null ptr deref then msg the gcc maintainers because &head (address of a class instance field) returned a null ptr))
-        if ( !*treeLocationTracker )
+        if ( !tRoot->left )
         {
-            // if the spot we want to insert is free we insert the thing
-            *treeLocationTracker = NodeToBeInserted;
+            tRoot->left = new Node( ValueToInsert );
+            tRoot->lHeight++;
         }
-        else if ( *( **treeLocationTracker ).value > *ValueToInsert )
+        else
         {
-            // if the value is less than the value at the place we want to insert then we want to insert to the left of that value
-            treeLocationTracker = &( ( **treeLocationTracker ).left );
+            InsertH( ValueToInsert, tRoot->left );
+            tRoot->lHeight = 1 + std::max( tRoot->left->lHeight, tRoot->left->rHeight );
         }
-        else if ( *( **treeLocationTracker ).value < *ValueToInsert )
+    }
+    else if ( *tRoot->value < *ValueToInsert )
+    {
+        if ( !tRoot->right )
         {
-            // if the value is greater than the value at the place we want to insert then we want to insert to the right of that value
-            treeLocationTracker = &( ( **treeLocationTracker ).right );
+            tRoot->right = new Node( ValueToInsert );
+            tRoot->rHeight++;
         }
+        else
+        {
+            InsertH( ValueToInsert, tRoot->right );
+            tRoot->rHeight = 1 + std::max( tRoot->right->lHeight, tRoot->right->rHeight );
+        }
+    }
+    else
+    {
+        std::stringstream exc;
+        exc << "Insert: Value " << *ValueToInsert << " already in tree\nLine: " << __LINE__ << "\nFile: " << __FILE__;
+        throw std::exception( exc.str().c_str() );
+    }
 
-        //exception handling
-        else //( *( **treeLocationTracker ).value == *ValueToInsert )
-        {
-            // if the value is already in the list then throw an exception
-            std::stringstream exc;
-            exc << "Insert: Value " << *NodeToBeInserted->value << " already in tree\nLine: " << __LINE__ << "\nFile: " << __FILE__;
-            delete NodeToBeInserted;
-            throw std::exception( exc.str().c_str() );
-        }
-    } while ( *treeLocationTracker != NodeToBeInserted );
+    if ( tRoot->left && std::abs( tRoot->left->lHeight - tRoot->left->rHeight ) > 1 )
+    {
+        Balance( tRoot->left );
+        tRoot->setHeight( Node::direction::dleft );
+    }
+    if ( tRoot->right && std::abs( tRoot->right->lHeight - tRoot->right->rHeight ) > 1 )
+    {
+        Balance( tRoot->right );
+        tRoot->setHeight( Node::direction::dright );
+    }
+}
+
+template <typename T>
+void BinaryTree<T>::Insert( T *ValueToInsert )
+{
+    if ( head == nullptr )head = new Node( ValueToInsert );
+    else InsertH( ValueToInsert, head );
+    if ( std::abs( head->lHeight - head->rHeight ) > 1 ) Balance( head );
 }
 
 template <typename T>
 typename BinaryTree<T>::Node *BinaryTree<T>::Remove( T *ValueToRemove )
 {
-
+    /*
+    Cases reference:
+    Node has no children
+    Node has one child
+    Node has two children
+    */
+    Node *res;
+    Node **ptrToNodeWithVal = addrFind( ValueToRemove );
+    if ( !(*ptrToNodeWithVal)->left && !(*ptrToNodeWithVal)->right )
+    {
+        res = *ptrToNodeWithVal;
+        *ptrToNodeWithVal = nullptr;
+        
+    }
+    else if ( ( *ptrToNodeWithVal )->left && ( *ptrToNodeWithVal )->right )
+    {
+        // find next highest val in subtree of children and have it assume the place of the node being removed
+    }
+    else // Node has only one child
+    {
+        res = *ptrToNodeWithVal;
+        *ptrToNodeWithVal = ( *ptrToNodeWithVal )->left == nullptr ? ( *ptrToNodeWithVal )->right : ( *ptrToNodeWithVal )->left;
+    }
+    return res;
 }
 
 template <typename T>
-typename BinaryTree<T>::Node *BinaryTree<T>::Find(T* ValueToFind)
+typename BinaryTree<T>::Node **BinaryTree<T>::addrFind( T* ValueToFind )
+{
+    Node **temp = &head;
+
+    while ( !( *temp == nullptr || *(*temp)->value == *ValueToFind ) )
+    {
+             if ( *( *temp )->value < *ValueToFind )temp = &( ( *temp )->right );
+        else if ( *( *temp )->value > *ValueToFind )temp = &( ( *temp )->left  );
+    }
+    return temp;
+}
+
+template <typename T>
+typename BinaryTree<T>::Node *BinaryTree<T>::FindNextLower()
 {
 
 }
 
+template <typename T>
+typename BinaryTree<T>::Node *BinaryTree<T>::Find( T* ValueToFind )
+{
+    Node *temp = head;
+    while ( !( temp == nullptr || *temp->value == *ValueToFind ) )
+    {
+             if ( *temp->value < *ValueToFind )temp = temp->right;
+        else if ( *temp->value > *ValueToFind )temp = temp->left;
+    }
+    return temp;
+}
+
+// Following functions balance (or help balance) an unbalanced tree
+template <typename T>
+void BinaryTree<T>::Balance( Node *&parentsptr )
+{
+    if ( parentsptr->lHeight > parentsptr->rHeight )
+    {
+        if ( parentsptr->left->lHeight > parentsptr->left->rHeight )
+            RotateLeftLeft( parentsptr );
+        else
+            RotateLeftRight( parentsptr );
+    }
+    else
+    {
+        if ( parentsptr->right->lHeight > parentsptr->right->rHeight )
+            RotateRightLeft( parentsptr );
+        else
+            RotateRightRight( parentsptr );
+    }
+}
+
+template<typename T>
+void BinaryTree<T>::RotateLeftLeft( Node *&parentsptr )
+{
+    // rotate the nodes
+    Node *unbalancedNode = parentsptr;
+    parentsptr = unbalancedNode->left;
+    unbalancedNode->left = parentsptr->right;
+    parentsptr->right = unbalancedNode;
+
+    //re-set the heights that may have changed
+    parentsptr->right->setHeight( Node::direction::dleft );
+    parentsptr->setHeight( Node::direction::dright );
+}
+
+template<typename T>
+void BinaryTree<T>::RotateRightRight( Node *&parentsptr )
+{
+    // rotate the nodes
+    Node *unbalancedNode = parentsptr;
+    parentsptr = unbalancedNode->right;
+    unbalancedNode->right = parentsptr->left;
+    parentsptr->left = unbalancedNode;
+    
+    //re-set the heights that may have changed
+    parentsptr->left->setHeight( Node::direction::dright );
+    parentsptr->setHeight( Node::direction::dleft );
+}
+
+template<typename T>
+void BinaryTree<T>::RotateLeftRight( Node *&parentsptr )
+{
+    // rotate the nodes
+    Node *b = parentsptr->left->right->left;
+    Node *c = parentsptr->left->right->right;
+    parentsptr->left->right->right = parentsptr;
+    parentsptr->left->right->left = parentsptr->left;
+    parentsptr = parentsptr->left->right;
+    parentsptr->left->right = b;
+    parentsptr->right->left = c;
+
+    //re-set the heights that may have changed
+    parentsptr->left->setHeight( Node::direction::dright );
+    parentsptr->right->setHeight( Node::direction::dleft );
+    parentsptr->setHeight( Node::direction::dleft );
+    parentsptr->setHeight( Node::direction::dright );
+}
+
+template <typename T>
+void BinaryTree<T>::RotateRightLeft( Node *&parentsptr )
+{
+    // rotate the nodes
+    Node *b = parentsptr->right->left->left;
+    Node *c = parentsptr->right->left->right;
+    parentsptr->right->left->left = parentsptr;
+    parentsptr->right->left->right = parentsptr->right;
+    parentsptr = parentsptr->right->left;
+    parentsptr->left->right = b;
+    parentsptr->right->left = c;
+
+    //re-set the heights that may have changed
+    parentsptr->right->setHeight( Node::direction::dleft );
+    parentsptr->left->setHeight( Node::direction::dright );
+    parentsptr->setHeight( Node::direction::dleft );
+    parentsptr->setHeight( Node::direction::dright );
+}
 
 // Following functions convert (or help convert) the tree into an array
 template <typename T>

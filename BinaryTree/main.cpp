@@ -5,8 +5,8 @@
 
 int main()
 {
-	srand( time( NULL ) );
-	for ( int a = 0; a < 1000000; a++ )
+	srand( time(NULL) );
+	for ( int j = 0; j < 1000000; j++ )
 	{
 		BinaryTree<int> *bin = new BinaryTree<int>;
 
@@ -22,6 +22,17 @@ int main()
 				//std::cout << except.what() << "\n";
 			}
 		}
+
 		delete bin;
+
+		if ( j % 100000 == 0 )
+		{
+			std::cout << "{ ";
+			for ( int i = 0; i < j / 100000; i++ )
+			{
+				std::cout << " [] ";
+			}
+			std::cout << " }" << std::endl;
+		}
 	}
 }
