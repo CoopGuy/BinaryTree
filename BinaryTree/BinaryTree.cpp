@@ -1,6 +1,7 @@
 #include "BinaryTree.h"
 #include <exception>
 #include <sstream>
+#include <iostream>
 
 // Following functions deal with I/O of the tree
 template <typename T>
@@ -70,19 +71,22 @@ typename BinaryTree<T>::Node *BinaryTree<T>::RemoveH( T *ValueToRemove, Node *&r
     */
 
     Node *res;
-
-    if ( root->value == *ValueToRemove ) // then remove the value
+    if ( !root )return root;
+    if ( *root->value == *ValueToRemove ) // then remove the value
     {
         if ( root->left && root->right ) // node has two children
         {
             // find next highest val in right subtree of children and have it assume the place of the node being removed
             res = root;
-            Node **replacement = RemoveNextHighest( root->right );
-            ( *replacement )->left = root->left;
-            ( *replacement )->right = root->right;
+            Node *replacement = RemoveNextHighest( root->right );
+            replacement->left = root->left;
+            replacement->right = root->right;
             root = replacement;
-            root->left = nullptr;
-            root->right = nullptr;
+            res->left = nullptr;
+            res->right = nullptr;
+            root->setHeight( Node::direction::dleft );
+            root->setHeight( Node::direction::dright );
+            if ( std::abs( root->lHeight - root->rHeight ) > 1 )Balance( root );
         }
         else if ( !root->left && !root->right ) // node has no children
         {
@@ -96,7 +100,7 @@ typename BinaryTree<T>::Node *BinaryTree<T>::RemoveH( T *ValueToRemove, Node *&r
         }
         return res;
     }
-    else if ( root->value > *ValueToRemove )
+    else if ( *root->value > *ValueToRemove )
     {
         res = RemoveH( ValueToRemove, root->left );
         root->setHeight( Node::direction::dleft );
@@ -119,10 +123,10 @@ typename BinaryTree<T>::Node *BinaryTree<T>::RemoveNextHighest( Node *&root )
 {
     Node *res;
 
-    if ( !root->left && !root->right ) // then remove the value
+    if ( !root->left )
     {
         res = root;
-        root = nullptr;
+        root = root->right;
         return res;
     }
     else
@@ -274,4 +278,19 @@ typename BinaryTree<T>::Node **BinaryTree<T>::GetAllAscending()
     int a = 0;
     AddAscending( arr, head, a );
     return arr;
+}
+
+template <typename T>
+void BinaryTree<T>::Node::print( int depth )
+{
+    if ( left )left->print( depth + 1 );
+
+    for ( int i = 0; i < depth; i++ )
+    {
+        std::cout << "   ";
+    }
+    std::cout << *value << '\n';
+    
+    if ( right )right->print( depth + 1 );
+    return;
 }

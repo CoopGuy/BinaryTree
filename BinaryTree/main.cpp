@@ -24,7 +24,8 @@ void fillArray( int *arr, int size, int max )
 
 int main()
 {
-	srand( time(NULL) );
+	unsigned seed = 42; // (unsigned) time( NULL );
+	srand( seed );
 	for ( int j = 0; j < 100000; j++ )
 	{
 		BinaryTree<int> *bin = new BinaryTree<int>;
@@ -32,7 +33,7 @@ int main()
 		int arr[ARRSIZE] = { -1 };
 		fillArray( arr, ARRSIZE, 1000 );
 
-		for ( int i = 0; i < 100; i++ )
+		for ( int i = 0; i < ARRSIZE; i++ )
 		{
 			try
 			{
@@ -41,17 +42,28 @@ int main()
 			}
 			catch ( std::exception &except )
 			{
-				//std::cout << except.what() << "\n";
+				std::cout << except.what() << "\n";
 				i--;
 			}
 		}
 
-		for ( int i = 0; i < 100; i++ )
+		//if ( !bin->isBalanced() )std::cout << "Balance Error" << std::endl;
+		for ( int i = 0; i < ARRSIZE; i++ )
 		{
 			int *a = new int( arr[i] );
 			if ( *a == -1 )break;
 			if ( bin->Find( a ) == nullptr ) std::cout << "cannot find " << *a << " in list i = " << i << std::endl;
 			delete a;
+		}
+
+		//bin->print();
+		for ( int i = 0; i < ARRSIZE; i++ )
+		{
+			//std::cout << "\n\nRemoving " << arr[i] << "\n";
+			int *a = new int( arr[i] );
+			delete bin->Remove( a );
+			delete a;
+			//bin->print();
 		}
 
 		delete bin;

@@ -39,6 +39,15 @@ private:
 			}
 		}
 		bool isLeaf() { return !left && !right; };
+		bool isBalanced()
+		{
+			bool res = true;
+			if ( left )res = res && left->isBalanced();
+			if ( right )res = res && right->isBalanced();
+			res = res && std::abs( lHeight - rHeight ) < 2;
+			return res;
+		}
+		void print( int depth = 0 );
 	};
 
 private:
@@ -86,4 +95,9 @@ public:
 
 	Node **GetAllAscending();
 	Node **GetAllDescending();
+
+	//debugging
+	bool isBalanced() { return head->isBalanced(); };
+	void print() { if ( head )head->print(); };
+	
 };
