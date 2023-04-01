@@ -4,7 +4,7 @@
 template <typename T>
 class BinaryTree
 {
-private:
+public:
 	class Node
 	{
 	private:

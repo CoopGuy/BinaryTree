@@ -1,117 +1,155 @@
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <sstream>
+#include <iomanip>
 #include "BinaryTree.h"
 #include "BinaryTree.cpp"
-#include <random>
-#include <iostream>
-#include <chrono>
-#include <thread>
-#include <mutex>
 
-bool inArray( int *arr, int num, int maxind )
+class StringValuePair
 {
-	for ( int i = 0; i < maxind; i++ ) if ( arr[i] == num ) return false;
-	return true;
-}
-
-void fillArray( int *arr, int size, int max )
-{
-	int insert;
-	for ( int i = 0; i < size; i++ )
+public:
+	std::string word;
+	int count;
+	StringValuePair( std::string w ) : word( w ), count( 1 ) {};
+	bool operator>(const StringValuePair &a)
 	{
-		do
-		{
-			insert = rand() % max;
-		} while ( !inArray( arr, insert, i ) );
-		arr[i] = insert;
+		return word > a.word;
 	}
+	bool operator<( const StringValuePair &a )
+	{
+		return word < a.word;
+	}
+	bool operator==( const StringValuePair &a )
+	{
+		return word == a.word;
+	}
+	friend std::ostream &operator<<( std::ostream &os, const StringValuePair &dt );
+};
+
+std::ostream& operator<<(std::ostream&os, const StringValuePair &a )
+{
+	os << a.word;
+	return os;
 }
 
-void testBinaryTree( bool *comparr, int j )
+void openuserfile( std::fstream &reader )
 {
-	BinaryTree<int> *bin = new BinaryTree<int>;
-	constexpr int ARRSIZE = 10000;
-	int *arr = new int[ARRSIZE];
-	fillArray( arr, ARRSIZE, 1000000 );
-
-	for ( int i = 0; i < ARRSIZE; i++ )
-	{
-		try
+	std::string filename = "";
+	while ( !reader.is_open() )
+	{ // if file doesn't exist, keep prompting
+		if ( filename != "" )
 		{
-			bin->Insert( new int( arr[i] ) );
+			std::cout << "ERROR: File could not be found or read. Please try again."
+				<< std::endl;
 		}
-		catch ( std::exception &except )
+		std::cout << "Filename: ";
+		std::cin >> filename; //get filename from user
+		std::cin.ignore();
+		if ( (int) filename.find( ".txt" ) < 0 )
 		{
-			std::cout << except.what() << "\n";
-			i--;
+			filename.append( ".txt" );
+		}
+		reader.open( filename );
+	}
+}
+
+void readData( std::fstream &reader, BinaryTree<StringValuePair> &data )
+{
+	while ( !reader.eof() )
+	{
+		std::string input, word;
+		std::getline( reader, input );
+		for ( char c : input )
+		{
+			if ( c == ' ' || c == '\n' || c == '-' )
+			{
+				StringValuePair *a = new StringValuePair( word );
+				BinaryTree< StringValuePair>::Node *t = data.Find( a );
+				if ( t == nullptr ) data.Insert( new StringValuePair( word ) );
+				else t->value->count++;
+				delete a;
+				word = "";
+			}
+			else if ( 65 <= c && c <= 122 )
+			{
+				word += c;
+			}
 		}
 	}
-
-	for ( int i = 0; i < ARRSIZE; i++ )
-	{
-		int *a = new int( arr[i] );
-		if ( bin->Find( a ) == nullptr ) std::cout << "cannot find " << *a << " in list i = " << i << std::endl;
-		delete a;
-	}
-
-	for ( int i = 0; i < ARRSIZE; i++ )
-	{
-		int *a = new int( arr[i] );
-		delete bin->Remove( a );
-		delete a;
-	}
-
-	delete bin;
-	delete[ARRSIZE] arr;
-	comparr[j] = true;
 }
 
-bool Completed( bool *arr, int size )
+void runAnalysis( BinaryTree<StringValuePair> &info )
 {
-	for ( int i = 0; i < size; i++ )if ( !arr[i] )return false;
-	return true;
+	std::fstream reader;
+	openuserfile( reader ); // gets filename, attempts to open it, and prints error message on fail
+	readData( reader, info );	// read data from doc
+	reader.close();
 }
 
-void printbools( bool *arr, int size )
+void doUserActions( BinaryTree<StringValuePair> &info )
 {
-	//for ( int i = 0; i < 100; i++ )
-	//{
-	//	std::cout << '\b';
-	//}
-	std::cout << "\n";
-	for ( int i = 0; i < size / 10; i++ )
+	std::string userinput;
+	do
 	{
-		int sum = 0;
-		for ( int j = i * 10; j < (i * 10 + 10); j++ )
+		std::cout << "Menu \n1) Word Search\n2) Print\n(~ to exit) $: ";
+		std::getline( std::cin, userinput );
+		char inputchar = userinput[0];
+		if ( inputchar == '1' )
 		{
-			if ( arr[j] )sum++;
+			std::cout << "Word Search\n(~ to exit) $: ";
+			std::getline( std::cin, userinput );
+
+			StringValuePair *a = new StringValuePair( userinput );
+			BinaryTree< StringValuePair>::Node *n = info.Find( a );
+			delete a;
+
+			if ( n ) std::cout << "Word: " << n->value->word << "\nCount: " << n->value->count << '\n';
+			else   std::cout << "Error: Word not found\n";
 		}
-		if ( sum < 5 )std::cout << "_";
-		else if ( sum < 8 )std::cout << "-";
-		else std::cout << '^';
-	}
+		else if ( inputchar == '2' )
+		{
+			int i, s = info.Size();
+			BinaryTree< StringValuePair>::Node **arr;
+
+			std::cout << "1)Ascending Order\n2)Descending Order\n(~ to exit) $: ";
+			std::getline( std::cin, userinput );
+
+			if ( userinput[0] == '1' )
+				arr = info.GetAllAscending();
+
+			else
+				arr = info.GetAllDescending();
+
+			for ( i = 0; i < info.Size(); i++ )
+				std::cout << arr[i]->value->word << " : " << arr[i]->value->count << "\n";
+		}
+		else
+		{
+			std::cout << "Exiting...\n";
+		}
+	} while ( userinput != "~" );
 }
+
+/*
+Once the file is read and loaded to the tree, let the
+user search for a word. If it is found, return the count. If it is not, indicate such. Also,
+allow the user to see a list of all words with count in alphabetic order both ascending and
+descending (Task 1 part f and g).
+*/
 
 int main()
 {
-	unsigned seed = (unsigned) time( NULL );
-	srand( seed );
-	constexpr int THREADCOUNT = 1000;
-
-	std::thread threads[THREADCOUNT];
-	bool *completed = new bool[THREADCOUNT] { false };
-
-	for ( int j = 0; j < THREADCOUNT; j++ )
+	std::string userinput;
+	do
 	{
-		threads[j] = std::thread(testBinaryTree, completed, j);
-	}
-	while ( !Completed( completed, THREADCOUNT ) )
-	{
-		std::this_thread::sleep_for( std::chrono::seconds( 1 ) );
-		printbools( completed, THREADCOUNT );
-	}
-	for ( int i = 0; i < THREADCOUNT; i++ )
-	{
-		threads[i].join();
-	}
+		BinaryTree<StringValuePair> info;
+		info.print();
+		runAnalysis( info );
+		doUserActions( info );
+		std::cout << "\nProcess another book? : ";
+		std::cin >> userinput;
+		std::cout << std::endl;
+	} while ( toupper( ( userinput.c_str() )[0] ) == 'Y' );
 	return 0;
 }
-
